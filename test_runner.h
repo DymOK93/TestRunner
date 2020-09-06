@@ -1,4 +1,5 @@
 #pragma once
+#include "container_traits.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -8,61 +9,40 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <type_traits>
 
-namespace TestRunnerPrivate {
-  template <
-    class Map
-  >
-  std::ostream& PrintMap(std::ostream& os, const Map& m) {
+
+template <class Map>
+std::enable_if_t<algo::container::is_map_v<Map>, std::ostream&> operator<<(std::ostream& os, const Map& m) {
     os << "{";
     bool first = true;
     for (const auto& kv : m) {
-      if (!first) {
-        os << ", ";
-      }
-      first = false;
-      os << kv.first << ": " << kv.second;
+        if (!first) {
+            os << ", ";
+        }
+        first = false;
+        os << kv.first << ": " << kv.second;
     }
     return os << "}";
-  }
 }
 
-template <class T>
-std::ostream& operator << (std::ostream& os, const std::vector<T>& s) {
-  os << "{";
-  bool first = true;
-  for (const auto& x : s) {
-    if (!first) {
-      os << ", ";
+template <class Container>
+std::enable_if_t<
+    std::conjunction_v<
+        std::disjunction<algo::container::is_linear<Container>, algo::container::is_set<Container>>,
+        std::negation<std::is_same<Container, std::string>                      //"Костыль" из-за ADL для корректного вывода std::string  
+        >
+    >, std::ostream&> operator<<(std::ostream& os, const Container& s) {
+    os << "{";
+    bool first = true;
+    for (const auto& x : s) {
+        if (!first) {
+            os << ", ";
+        }
+        first = false;
+        os << x;
     }
-    first = false;
-    os << x;
-  }
-  return os << "}";
-}
-
-template <class T>
-std::ostream& operator << (std::ostream& os, const std::set<T>& s) {
-  os << "{";
-  bool first = true;
-  for (const auto& x : s) {
-    if (!first) {
-      os << ", ";
-    }
-    first = false;
-    os << x;
-  }
-  return os << "}";
-}
-
-template <class K, class V>
-std::ostream& operator << (std::ostream& os, const std::map<K, V>& m) {
-  return TestRunnerPrivate::PrintMap(os, m);
-}
-
-template <class K, class V>
-std::ostream& operator << (std::ostream& os, const std::unordered_map<K, V>& m) {
-  return TestRunnerPrivate::PrintMap(os, m);
+    return os << "}";
 }
 
 template<class T, class U>
